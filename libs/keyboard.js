@@ -19,7 +19,7 @@ var Key = {
     W: 87,
 	X: 88,
 	Z: 90,
-	
+
 	LT: 79,
 	GT: 80,
 
@@ -29,23 +29,10 @@ var Key = {
     UPARROW: 38,
     RIGHTARROW: 39,
     DOWNARROW: 40,
-  
-  isDown: function(keyCode) {
-    return this._pressed[keyCode];
-  },
-  
-  onKeydown: function(event) {
-    this._pressed[event.keyCode] = true;
-  },
-  
-  onKeyup: function(event) {
-    delete this._pressed[event.keyCode];
-  }
+
+  isDown: function(keyCode) { return this._pressed[keyCode]; },
+
+  onKeydown: function(event) { this._pressed[event.keyCode] = true; },
+
+  onKeyup: function(event) { delete this._pressed[event.keyCode]; }
 };
-
-
-/*
-    window.addEventListener("keydown", function(evt) {
-        alert("keydown: " + evt.keyCode);
-    }, false);
-*/

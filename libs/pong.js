@@ -7,30 +7,28 @@ function init()
 {
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(
-  // frustum vertical view         aspect ratio							 frustum near plane     frustum far plane
-    45,                          window.innerWidth / window.innerHeight, 0.1,                   1000 );
+  camera = new THREE.PerspectiveCamera(35,
+    window.innerWidth / window.innerHeight, 0.1, 1000);
 
   renderer = new THREE.WebGLRenderer();
-  //						color     alpha
-  renderer.setClearColor( 0x000000, 1.0 );
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setClearColor(0x000000, 1.0);
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMapEnabled = true;
 
   camera.position.x = 0;
-  camera.position.y = 0;
-  camera.position.z = 30;
-  camera.lookAt( scene.position );
+  camera.position.y = -30;
+  camera.position.z = 15;
+  camera.lookAt(scene.position);
 
   loadSounds();
-  createPlayBottom();
-  createBoundingWalls();
+  createField();
+  createWalls();
   createPaddles();
   createBall();
   addSpotLight();
 
   // Output to the stream
-  document.body.appendChild( renderer.domElement );
+  document.body.appendChild(renderer.domElement);
 
   // Call render
   render();
@@ -41,139 +39,190 @@ function render()
   moveBallAndMaintainPaddles();
 
   // Request animation frame
-  requestAnimationFrame( render );
+  requestAnimationFrame(render);
 
   // Call render()
-  renderer.render( scene, camera );
+  renderer.render(scene, camera);
 }
 
 function addSpotLight()
 {
-  spotLight = new THREE.SpotLight( 0xffffff );
-      spotLight.position.set( 10, 20, 20 );
-      spotLight.shadowCameraNear = 20;
-      spotLight.shadowCameraFar = 50;
-      spotLight.castShadow = true;
-      scene.add(spotLight);
+  spotLight = new THREE.SpotLight(0xffffff);
+  spotLight.position.set(10, 20, 20);
+  spotLight.shadowCameraNear = 20;
+  spotLight.shadowCameraFar = 50;
+  spotLight.castShadow = true;
+  scene.add(spotLight);
 }
 
-function createPlayBottom()
+var field;
+function createField()
 {
-  var planeGeometry = new THREE.PlaneGeometry( 10, 20, 10, 10 );
-  var planeMaterial = new THREE.MeshLambertMaterial({color:0x4BD121});
-  var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-  scene.add(plane);
+  var width = 100; // 10;
+  var height = 200; // 20;
+
+  var fieldColor = 0x4BD121;
+
+  field = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 10, 10),
+                         new THREE.MeshLambertMaterial({color: fieldColor}));
+  scene.add(field);
 }
 
-function createBoundingWalls()
+var wall = []; // [0] = left wall, [1] = right wall
+function createWalls()
 {
-  var leftWall = new THREE.BoxGeometry( 1, 18, 5 );
-  var wallMaterial = new THREE.MeshBasicMaterial({color:'yellow'});
-  var wall1 = new THREE.Mesh( leftWall, wallMaterial );
-  wall1.position.x = -5;
-  scene.add( wall1 );
+  var wallWidth = 0.5; // Width
+  var wallHeight = 20; // Length
+  var wallDepth = 2.5; // Height
+  var wallColor = 'cornsilk';
 
-  var edges1 = new THREE.EdgesHelper( wall1, 0x5555555 );
-  scene.add( edges1 );
+  var distance = 5; // Distance from center of room to each wall
 
-  var rightWall = new THREE.BoxGeometry( 1, 18, 5 );
-  var wall2 = new THREE.Mesh( rightWall, wallMaterial );
-  wall2.position.x = 5;
-  scene.add( wall2 );
+  var geometry = new THREE.BoxGeometry(wallWidth, wallHeight, wallDepth);
+  var material = new THREE.MeshBasicMaterial({color:wallColor});
 
-  var edges2 = new THREE.EdgesHelper( wall2, 0x555555 );
-  scene.add( edges2 );
+  for (var i = 0; i < 2; i++)
+  {
+    wall[i] = new THREE.Mesh(geometry, material);
+    wall[i].position.x = (i % 2 === 0 ? -1 : 1) * 5;
+    wall[i].position.z = wallDepth / 2;
+    scene.add(wall[i]);
+    scene.add(new THREE.EdgesHelper(wall[i], 0x555555));
+  }
 }
 
-var paddle1, paddle2;
+var paddle = []; // [0] = Computer, [1] = Player
 function createPaddles()
 {
-  var opponentPaddle = new THREE.BoxGeometry( 2, .5, 3 );
-  var paddleMaterial = new THREE.MeshBasicMaterial({color:'salmon'});
-  paddle1 = new THREE.Mesh( opponentPaddle, paddleMaterial );
-  paddle1.position.y = 9;
-  scene.add( paddle1 );
+  var padWidth = 2;
+  var padHeight = .33;
+  var padDepth = 1.5; // Height of each paddle
+  var padColor = ['blue', 'red'];
 
-  var edges1 = new THREE.EdgesHelper( paddle1, 0x000000 );
-  scene.add( edges1 );
+  // Distance from center of room to each paddle
+  var distance = (wall[0].geometry.parameters.height / 2) - (padHeight / 2);
 
-  var playerPaddle = new THREE.BoxGeometry( 2, .5, 3 );
-  paddle2 = new THREE.Mesh( playerPaddle, paddleMaterial );
-  paddle2.position.y = -9;
-  scene.add( paddle2 );
+  var geometry = new THREE.BoxGeometry(padWidth, padHeight, padDepth);
 
-  var edges2 = new THREE.EdgesHelper( paddle2, 0x000000 );
-  scene.add( edges2 );
+  for (var i = 0; i < 2; i++)
+  {
+    paddle.push(new THREE.Mesh(geometry,
+                               new THREE.MeshBasicMaterial({color:padColor[i]})));
+    paddle[i].position.y = (i % 2 === 0 ? 1 : -1) * distance;
+    paddle[i].position.z = padDepth / 2;
+    scene.add(paddle[i]);
+    scene.add(new THREE.EdgesHelper(paddle[i], 0x000000));
+  }
 }
 
 var ball;
 function createBall()
 {
-  var ballSphere = new THREE.SphereGeometry( .5 );
-  var ballMaterial = new THREE.MeshBasicMaterial({color:'blue'});
-  ball = new THREE.Mesh( ballSphere, ballMaterial );
-  scene.add( ball );
+  var ballRadius = 0.5;
+  var ballColor = 0xb2ff00;
+
+  ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 32, 32),
+                        new THREE.MeshBasicMaterial({color: ballColor}));
+  ball.position.z = ballRadius;
+  scene.add(ball);
+  // scene.add(new THREE.EdgesHelper(ball, 0x000000)); // Crazy!
 }
 
-var xDir = .02;
-var yDir = .04;
+var v_x = randVelocity(-0.1, 0.1, -0.01, 0.01); // - west, + east
+var v_y = randVelocity(-0.1, 0.1, -0.04, 0.04); // + north, - south
 function moveBallAndMaintainPaddles()
 {
-  ball.position.x += xDir;
-  ball.position.y += yDir;
+  // Ball movements/bounces
+  var wallBound = wall[1].position.x
+                  - (wall[1].geometry.parameters.width / 2)
+                  - ball.geometry.parameters.radius;
+  var padPos = paddle[0].position.y
+               - (paddle[0].geometry.parameters.height / 2)
+               - ball.geometry.parameters.radius;
+  var goalBound = (wall[0].geometry.parameters.height / 2)
+                  + ball.geometry.parameters.radius;
 
-  if( Key.isDown( Key.A ) )
-  {
-    paddle2.position.x -= 0.02;
-  }
-  else if( Key.isDown( Key.D ) )
-  {
-    paddle2.position.x += 0.02;
-  }
+  ball.position.x += v_x;
+  ball.position.y += v_y;
 
-  if( ball.position.x < -4 )
+  // Ball hits walls
+  if(ball.position.x <= -wallBound || ball.position.x >= wallBound)
   {
-    xDir = .02;
-    three.play();
-  }
-  else if( ball.position.x > 4 )
-  {
-    xDir = -0.02;
-    four.play();
+    v_x = -v_x;
+    // three.play();
   }
 
-  if( ball.position.y < -8.5 && yDir < 0 )
+  // Ball hits paddle or scores
+  if(ball.position.y < -padPos && v_y < 0) // Ball is @ or past player's pad
   {
-    yDir = 0.04;
+    v_y = -v_y;
 
-    if( Math.abs( paddle2.position.x - ball.position.x ) <= 2 )
+    if(Math.abs(paddle[1].position.x - ball.position.x) <= 2)
     {
-      xDir = -xDir;
-      one.play();
+      // v_x = -v_x; // x direction should NOT change
+      // one.play();
     }
     else
     {
       ball.position.x = ball.position.y = 0;
-      explode.play();
+      paddle[0].position.x = paddle[1].position.x = 0;
+
+      v_x = randVelocity(-0.1, 0.1, -0.01, 0.01);
+      v_y = randVelocity(-0.1, 0.1, -0.04, 0.04);
+      // explode.play();
     }
   }
-  else if( ball.position.y > 8.5 && yDir > 0 )
+  else if(ball.position.y > padPos && v_y > 0) // Ball is @ or past comp's pad
   {
-    yDir = -0.04;
+    v_y = -v_y;
 
-    if( Math.abs( paddle1.position.x - ball.position.x ) <= 2 )
+    if(Math.abs(paddle[0].position.x - ball.position.x) <= 2)
     {
-      xDir = -xDir;
-      two.play();
+      // v_x = -v_x; // x direction should NOT change
+      // two.play();
     }
     else
     {
       ball.position.x = ball.position.y = 0;
-      explode.play();
+      v_x = randVelocity(-0.1, 0.1, -0.01, 0.01);
+      v_y = randVelocity(-0.1, 0.1, -0.04, 0.04);
+      // explode.play();
     }
   }
 
-  paddle1.position.x = ball.position.x;
+
+  // Player's paddle movements (incl. keyboard controls)
+  var padSpeed = 0.05;
+  var padBound = wall[1].position.x
+                 - (wall[1].geometry.parameters.width / 2)
+                 - (paddle[1].geometry.parameters.width / 2);
+
+  if (paddle[1].position.x > -padBound && paddle[1].position.x < padBound)
+  {
+    if (Key.isDown(Key.A) || Key.isDown(Key.LEFTARROW))
+      paddle[1].position.x -= padSpeed;
+    else if (Key.isDown(Key.D) || Key.isDown(Key.RIGHTARROW))
+      paddle[1].position.x += padSpeed;
+  }
+  else if (paddle[1].position.x === -padBound)
+  {
+    if (Key.isDown(Key.D) || Key.isDown(Key.RIGHTARROW))
+      paddle[1].position.x += padSpeed;
+  }
+  else if (paddle[1].position.x === padBound)
+  {
+    if (Key.isDown(Key.A) || Key.isDown(Key.LEFTARROW))
+      paddle[1].position.x -= padSpeed;
+  }
+  else if (paddle[1].position.x < -padBound)
+    paddle[1].position.x = -padBound;
+  else
+    paddle[1].position.x = padBound;
+
+
+  // Computer's paddle movements
+  if (ball.position.x > -padBound && ball.position.x < padBound)
+    paddle[0].position.x = ball.position.x;
 }
 
 var explode, one, two, three, four, five;
@@ -185,6 +234,16 @@ function loadSounds()
   three = new Audio("sounds/3.mp3");
   four = new Audio("sounds/4.mp3");
   five = new Audio("sounds/5.mp3");
+}
+
+function randVelocity(min, max, excludeLower, excludeUpper)
+{
+  var result = 0;
+
+  while (result >= excludeLower && result <= excludeUpper)
+    result = min + (Math.random() * (max - min));
+
+  return result;
 }
 
 window.onload = init;
