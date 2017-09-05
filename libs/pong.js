@@ -1,5 +1,3 @@
-var DEBUG = true;
-
 var renderer;
 var scene;
 var camera;
@@ -35,6 +33,8 @@ var rest = false;
 var v_x = randVelocity(-0.1, 0.1, -0.01, 0.01); // - west, + east
 var v_y = randVelocity(-0.1, 0.1, -0.04, 0.04); // + north, - south
 var score = [0, 0];
+var scoreboard;
+var wallHit, padHit1, padHit2, ding, music;
 
 function initPong3D()
 {
@@ -45,7 +45,6 @@ function initPong3D()
 
   renderer = new THREE.WebGLRenderer();
   renderer.setClearColor(0x000000, 1.0);
-  // renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth - 16, window.innerHeight - 16);
   renderer.shadowMap.enabled = true;
 
@@ -59,6 +58,7 @@ function initPong3D()
   createWalls();
   createPads();
   createBall();
+  playMusic();
   addSpotLight();
 
   // Output to the stream
@@ -68,9 +68,15 @@ function initPong3D()
   render();
 }
 
+function updateScore()
+{
+  document.getElementById('scoreboard').innerHTML = "<p1>" + score[0] + "</p1> | <p2>" + score[1] + "</p2><br/>";
+}
+
 function render()
 {
   moveBallAndMaintainPads();
+  updateScore();
 
   // Request animation frame
   requestAnimationFrame(render);
@@ -173,9 +179,6 @@ function createBall()
   scene.add(ball);
 }
 
-if (DEBUG)
-  v_x = 0;
-
 function moveBallAndMaintainPads()
 {
   // Ball movements/bounces
@@ -192,7 +195,7 @@ function moveBallAndMaintainPads()
     if (Math.abs(ball.position.x) >= wallBoundX)
     {
       v_x = -v_x;
-      // three.play();
+      wallHit.play();
     }
 
     // Ball reaches paddle (or beyond)
@@ -204,13 +207,13 @@ function moveBallAndMaintainPads()
             < (pad.width / 2))
         {
           v_y = pad.hit - v_y;
-          // one.play();
+          padHit1.play();
         }
         else if (Math.abs(pad.arr[1].position.x - ball.position.x) // Corner hit
                  < ((pad.width / 2) + ball.geometry.parameters.radius))
         {
           v_y = pad.hit - v_y;
-          // one.play();
+          padHit1.play();
         }
       }
       else // Miss
@@ -231,13 +234,13 @@ function moveBallAndMaintainPads()
             < (pad.width / 2))
         {
           v_y = -(pad.hit + v_y);
-          // two.play();
+          padHit2.play();
         }
         else if (Math.abs(pad.arr[0].position.x - ball.position.x) // Corner hit
                  < ((pad.width / 2) + ball.geometry.parameters.radius))
         {
           v_y = -(pad.hit + v_y);
-          // two.play();
+          padHit2.play();
         }
       }
       else // Miss
@@ -280,21 +283,19 @@ function moveBallAndMaintainPads()
 
 
   // Computer's paddle movements
-  // if (-padBound < ball.position.x && ball.position.x < padBound)
-  // {
-  //   pad.arr[0].position.x = ball.position.x;
-  // }
+  if (-padBound < ball.position.x && ball.position.x < padBound)
+  {
+    movePadTo(0, ball.position.x);
+  }
 }
 
-var explode, one, two, three, four, five;
 function loadSounds()
 {
-  explode = new Audio("sounds/Explosion.mp3");
-  one = new Audio("sounds/1.mp3");
-  two = new Audio("sounds/2.mp3");
-  three = new Audio("sounds/3.mp3");
-  four = new Audio("sounds/4.mp3");
-  five = new Audio("sounds/5.mp3");
+  wallHit = new Audio("sounds/wallHit.wav");
+  padHit1 = new Audio("sounds/padHit1.wav");
+  padHit2 = new Audio("sounds/padHit2.wav");
+  ding = new Audio("sounds/ding.wav");
+  music = new Audio("sounds/music.wav");
 }
 
 function movePadTo(player, x)
@@ -319,15 +320,23 @@ function randVelocity(min, max, excludeLower, excludeUpper)
   return result;
 }
 
+function playMusic()
+{
+  music.addEventListener('ended', function()
+  {
+    this.currentTime = 0;
+    this.play();
+  }, false);
+  music.play();
+}
+
 function pointScored(player)
 {
   var timeout = 3000;
 
   score[player]++;
+  ding.play();
   setTimeout(function () { reset(); rest = false; } , timeout);
-
-  if (DEBUG)
-    console.log(score);
 }
 
 function reset()

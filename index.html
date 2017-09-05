@@ -1,12 +1,38 @@
 <html>
   <head>
     <title>P O N G &nbsp;3 D</title>
+    <style>
+      body
+      {
+        color       : #ffffff;
+        font-family : Monospace;
+        font-size   : 32px;
+        text-align  : center;
+        margin      : 0px;
+        overflow    : hidden;
+      }
+
+      #scoreboard
+      {
+        position : absolute;
+        top      : 0px;
+        width    : 100%;
+        padding  : 5px;
+				z-index  : 100;
+      }
+
+      p1 { color : blue }
+      p2 { color : red }
+    </style>
 
     <script src="libs/three.js"></script>
     <script src="libs/keyboard.js"></script>
+    <script src="libs/typeface-0.10.js"></script>
+    <script src="fonts/Rubik_Regular.js"></script>
   </head>
 
   <body>
+		<div id="scoreboard"></div>
     <script src="libs/pong.js"></script>
     <script>
       window.onload = initPong3D();
